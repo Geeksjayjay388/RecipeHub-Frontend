@@ -1,0 +1,85 @@
+import api from './api';
+
+// Get all recipes
+export const getRecipes = async (params = {}) => {
+  try {
+    console.log('📡 Calling /api/recipes with params:', params);
+    const response = await api.get('/recipes', { params });
+    console.log('📦 API Response:', response);
+    console.log('📦 Response data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error in getRecipes:', error);
+    console.error('❌ Error response:', error.response);
+    throw error;
+  }
+};
+
+// Get recent recipes (alias for getRecipes with sort param)
+export const getRecentRecipes = async (params = {}) => {
+  return await getRecipes({ ...params, sort: 'newest' });
+};
+
+// Get recipes count
+export const getRecipesCount = async () => {
+  try {
+    const response = await api.get('/recipes/count');
+    return response.data;
+  } catch (error) {
+    // Fallback: get all recipes and count them
+    const recipes = await getRecipes();
+    return { count: recipes.recipes?.length || recipes.length || 0 };
+  }
+};
+
+// Get single recipe
+export const getRecipeById = async (id) => {
+  const response = await api.get(`/recipes/${id}`);
+  return response.data;
+};
+
+// Create recipe (Admin)
+export const createRecipe = async (formData) => {
+  const response = await api.post('/recipes', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// Update recipe (Admin)
+export const updateRecipe = async (id, recipeData) => {
+  const response = await api.put(`/recipes/${id}`, recipeData);
+  return response.data;
+};
+
+// Delete recipe (Admin)
+export const deleteRecipe = async (id) => {
+  const response = await api.delete(`/recipes/${id}`);
+  return response.data;
+};
+
+// Like recipe
+export const likeRecipe = async (id) => {
+  const response = await api.post(`/recipes/${id}/like`);
+  return response.data;
+};
+
+// Star recipe
+export const starRecipe = async (id) => {
+  const response = await api.post(`/recipes/${id}/star`);
+  return response.data;
+};
+
+// Add review
+export const addReview = async (id, reviewData) => {
+  const response = await api.post(`/recipes/${id}/reviews`, reviewData);
+  return response.data;
+};
+
+// Get user's starred recipes
+export const getStarredRecipes = async () => {
+  const response = await api.get('/users/starred');
+  return response.data;
+};
