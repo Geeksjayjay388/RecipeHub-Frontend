@@ -50,6 +50,32 @@ export const getUsersCount = async () => {
   }
 };
 
+// ✅ Get active users count (Admin)
+export const getActiveUsersCount = async () => {
+  try {
+    const response = await api.get('/users/active-count');
+    return response.data;
+  } catch (error) {
+    // Fallback: return mock data or calculate from all users
+    console.warn('Active users endpoint not available, using fallback');
+    try {
+      const users = await getAllUsers();
+      const allUsers = users.users || users;
+      
+      // Consider users active if they logged in within last 24 hours
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const activeUsers = allUsers.filter(user => {
+        const lastLogin = new Date(user.lastLogin || user.updatedAt || user.createdAt);
+        return lastLogin > oneDayAgo;
+      });
+      
+      return { count: activeUsers.length };
+    } catch (fallbackError) {
+      return { count: 0 };
+    }
+  }
+};
+
 // Get starred recipes
 export const getStarredRecipes = async () => {
   const response = await api.get('/users/starred-recipes');
@@ -68,5 +94,23 @@ export const updateProfile = async (userData) => {
 // Get user profile
 export const getUserProfile = async () => {
   const response = await api.get('/users/profile');
+  return response.data;
+};
+
+// Update user role (Admin)
+export const updateUserRole = async (userId, role) => {
+  const response = await api.put(`/users/${userId}/role`, { role });
+  return response.data;
+};
+
+// Delete user (Admin)
+export const deleteUser = async (userId) => {
+  const response = await api.delete(`/users/${userId}`);
+  return response.data;
+};
+
+// Get user by ID (Admin)
+export const getUserById = async (userId) => {
+  const response = await api.get(`/users/${userId}`);
   return response.data;
 };

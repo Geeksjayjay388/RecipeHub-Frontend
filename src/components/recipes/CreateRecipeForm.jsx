@@ -11,28 +11,31 @@ import { TbChefHat } from 'react-icons/tb';
 const CreateRecipeForm = ({ recipe = null }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreview, setImagePreview] = useState(recipe?.image || null);
+  
   const [formData, setFormData] = useState({
-        title: recipe?.title || '',
-        description: recipe?.description || '',
-        category: recipe?.category || 'Main Course',
-        difficulty: recipe?.difficulty || 'Medium',
-        prepTime: recipe?.prepTime || '',
-        cookTime: recipe?.cookTime || '',
-        servings: recipe?.servings || '',
-        ingredients: recipe?.ingredients || [''],
-        instructions: recipe?.instructions || [''],
-        image: recipe?.image || null,
-        tags: recipe?.tags || []
-        });
-React.useEffect(() => {
-  if (recipe?.image) {
-    setImagePreview(recipe.image);
-  }
-}, [recipe]);
+    title: recipe?.title || '',
+    description: recipe?.description || '',
+    category: recipe?.category || 'Breakfast',
+    difficulty: recipe?.difficulty || 'Medium',
+    prepTime: recipe?.prepTime || '',
+    cookTime: recipe?.cookTime || '',
+    servings: recipe?.servings || '',
+    ingredients: recipe?.ingredients || [''],
+    instructions: recipe?.instructions?.map(i => i.text || i) || [''],
+    image: recipe?.image || null,
+    tags: recipe?.tags || []
+  });
+
+  React.useEffect(() => {
+    if (recipe?.image) {
+      setImagePreview(recipe.image);
+    }
+  }, [recipe]);
+
   const categories = [
-    'Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Appetizer', 
-    'Main Course', 'Side Dish', 'Snack', 'Beverage', 'Salad'
+    'Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 
+    'Vegetarian', 'Vegan', 'Quick'
   ];
 
   const difficulties = ['Easy', 'Medium', 'Hard'];
@@ -127,79 +130,115 @@ React.useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
+    e.preventDefault();
+    
+    if (!validateForm()) return;
 
-  try {  // ← YOU WERE MISSING THIS!
-    setLoading(true);
-    
-    const recipeData = new FormData();
-    recipeData.append('title', formData.title);
-    recipeData.append('description', formData.description);
-    recipeData.append('category', formData.category);
-    recipeData.append('difficulty', formData.difficulty);
-    recipeData.append('prepTime', formData.prepTime);
-    recipeData.append('cookTime', formData.cookTime);
-    recipeData.append('servings', formData.servings);
-    recipeData.append('ingredients', JSON.stringify(formData.ingredients.filter(i => i.trim())));
-    recipeData.append('instructions', JSON.stringify(formData.instructions.filter(i => i.trim())));
-    recipeData.append('tags', JSON.stringify(formData.tags));
-    
-    if (formData.image) {
-      recipeData.append('image', formData.image);
-    }
+    try {
+      setLoading(true);
+      
+      const recipeData = new FormData();
+      
+      // Add all fields
+      recipeData.append('title', formData.title.trim());
+      recipeData.append('description', formData.description.trim());
+      recipeData.append('category', formData.category);
+      recipeData.append('difficulty', formData.difficulty);
+      recipeData.append('prepTime', formData.prepTime.toString());
+      recipeData.append('cookTime', formData.cookTime.toString());
+      recipeData.append('servings', formData.servings.toString());
+      
+      // Format arrays correctly
+      const cleanIngredients = formData.ingredients.filter(i => i.trim()).map(i => i.trim());
+      const cleanInstructions = formData.instructions
+        .filter(i => i.trim())
+        .map((instruction, index) => ({
+          step: index + 1,
+          text: instruction.trim()
+        }));
+      
+      // Validate arrays are not empty
+      if (cleanIngredients.length === 0) {
+        toast.error('Please add at least one ingredient');
+        setLoading(false);
+        return;
+      }
+      
+      if (cleanInstructions.length === 0) {
+        toast.error('Please add at least one instruction');
+        setLoading(false);
+        return;
+      }
+      
+      recipeData.append('ingredients', JSON.stringify(cleanIngredients));
+      recipeData.append('instructions', JSON.stringify(cleanInstructions));
+      recipeData.append('tags', JSON.stringify(formData.tags));
+      
+      // Add image if it's a file
+      if (formData.image && typeof formData.image !== 'string') {
+        recipeData.append('image', formData.image);
+        console.log('📸 Image file:', formData.image.name, formData.image.size, 'bytes');
+      }
 
-    if (recipe) {
-      // UPDATE existing recipe
-      await updateRecipe(recipe._id, recipeData);
-      toast.success(' Recipe updated successfully!');
-    } else {
-      // CREATE new recipe
-      await createRecipe(recipeData);
-      toast.success(' Recipe created successfully!');
+      // Debug log
+      console.log('📤 Sending FormData:');
+      for (let [key, value] of recipeData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File: ${value.name}, ${value.size} bytes]`);
+        } else {
+          console.log(`  ${key}:`, value);
+        }
+      }
+
+      if (recipe) {
+        await updateRecipe(recipe._id, recipeData);
+        toast.success('✅ Recipe updated successfully!');
+      } else {
+        await createRecipe(recipeData);
+        toast.success('✅ Recipe created successfully!');
+      }
+      
+      navigate('/admin');
+      
+    } catch (error) {
+      console.error('❌ Error saving recipe:', error);
+      console.error('Response data:', error.response?.data);
+      
+      const errorMsg = error.response?.data?.message 
+        || error.response?.data?.error 
+        || `Failed to ${recipe ? 'update' : 'create'} recipe`;
+      
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
     }
-    
-    navigate('/admin');
-  } catch (error) {  // ← NOW THIS WORKS!
-    console.error('Error saving recipe:', error);
-    toast.error(error.response?.data?.message || `Failed to ${recipe ? 'update' : 'create'} recipe`);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-800">
-            {recipe ? 'Edit Recipe' : 'Create New Recipe'}
-            </h1>
-            <p className="text-gray-600">
-            {recipe ? 'Update your recipe details' : 'Share your delicious creation with the community'}
-            </p>
-      <div className="mb-8">
-            <button
-                onClick={() => navigate('/admin')}
-                className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
-            >
-                <FiArrowLeft className="mr-2" />
-                Back to Dashboard
-            </button>
-            
-            <div className="flex items-center">
-                <TbChefHat className="text-4xl text-orange-500 mr-4" />
-                <div>
-                <h1 className="text-3xl font-bold text-gray-800">
-                    {recipe ? 'Edit Recipe' : 'Create New Recipe'}
-                </h1>
-                <p className="text-gray-600">
-                    {recipe ? 'Update your recipe details' : 'Share your delicious creation with the community'}
-                </p>
-                </div>
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/admin')}
+            className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
+          >
+            <FiArrowLeft className="mr-2" />
+            Back to Dashboard
+          </button>
+          
+          <div className="flex items-center">
+            <TbChefHat className="text-4xl text-orange-500 mr-4" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                {recipe ? 'Edit Recipe' : 'Create New Recipe'}
+              </h1>
+              <p className="text-gray-600">
+                {recipe ? 'Update your recipe details' : 'Share your delicious creation with the community'}
+              </p>
             </div>
-            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
@@ -494,16 +533,16 @@ React.useEffect(() => {
                 disabled={loading}
                 className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
               >
-                            {loading ? (
-                <>
+                {loading ? (
+                  <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     {recipe ? 'Updating...' : 'Creating...'}
-                </>
+                  </>
                 ) : (
-                <>
+                  <>
                     <FiSave className="mr-2" />
                     {recipe ? 'Update Recipe' : 'Create Recipe'}
-                </>
+                  </>
                 )}
               </button>
             </div>

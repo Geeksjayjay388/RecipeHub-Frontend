@@ -36,6 +36,31 @@ export const getMessagesStats = async () => {
   }
 };
 
+// ✅ Get pending messages count (Admin)
+export const getPendingMessagesCount = async () => {
+  try {
+    const response = await api.get('/messages/pending-count');
+    return response.data;
+  } catch (error) {
+    // Fallback: get all messages and count pending
+    console.warn('Pending messages endpoint not available, using fallback');
+    try {
+      const messages = await getAllMessages({ limit: 1000 });
+      const allMessages = messages.messages || messages;
+      
+      const pending = allMessages.filter(m => 
+        m.status === 'pending' || 
+        m.status === 'new' || 
+        !m.status
+      );
+      
+      return { count: pending.length };
+    } catch (fallbackError) {
+      return { count: 0 };
+    }
+  }
+};
+
 // Update message status (Admin)
 export const updateMessageStatus = async (id, status) => {
   const response = await api.put(`/messages/${id}/status`, { status });
@@ -51,5 +76,11 @@ export const replyToMessage = async (id, content) => {
 // Delete message (Admin)
 export const deleteMessage = async (id) => {
   const response = await api.delete(`/messages/${id}`);
+  return response.data;
+};
+
+// ✅ Get message by ID (Admin)
+export const getMessageById = async (id) => {
+  const response = await api.get(`/messages/${id}`);
   return response.data;
 };

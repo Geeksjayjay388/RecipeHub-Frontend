@@ -32,6 +32,73 @@ export const getRecipesCount = async () => {
   }
 };
 
+// ✅ Get today's recipes count
+export const getTodayRecipesCount = async () => {
+  try {
+    const response = await api.get('/recipes/today-count');
+    return response.data;
+  } catch (error) {
+    // Fallback: get all recipes and filter by today
+    console.warn('Today recipes endpoint not available, using fallback');
+    try {
+      const recipes = await getRecipes({ limit: 1000 });
+      const allRecipes = recipes.recipes || recipes;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayRecipes = allRecipes.filter(recipe => {
+        const recipeDate = new Date(recipe.createdAt);
+        recipeDate.setHours(0, 0, 0, 0);
+        return recipeDate.getTime() === today.getTime();
+      });
+      
+      return { count: todayRecipes.length };
+    } catch (fallbackError) {
+      return { count: 0 };
+    }
+  }
+};
+
+// ✅ Get recipe statistics
+export const getRecipeStats = async () => {
+  try {
+    const response = await api.get('/recipes/stats');
+    return response.data;
+  } catch (error) {
+    // Fallback: calculate stats from all recipes
+    console.warn('Recipe stats endpoint not available, using fallback');
+    try {
+      const recipes = await getRecipes({ limit: 1000 });
+      const allRecipes = recipes.recipes || recipes;
+      
+      const totalLikes = allRecipes.reduce((sum, recipe) => {
+        return sum + (recipe.likes?.length || 0);
+      }, 0);
+      
+      const totalRatings = allRecipes.reduce((sum, recipe) => {
+        return sum + (recipe.rating || recipe.averageRating || 0);
+      }, 0);
+      
+      const averageRating = allRecipes.length > 0 
+        ? totalRatings / allRecipes.length 
+        : 0;
+      
+      return {
+        totalLikes,
+        averageRating: parseFloat(averageRating.toFixed(2)),
+        totalRecipes: allRecipes.length
+      };
+    } catch (fallbackError) {
+      return {
+        totalLikes: 0,
+        averageRating: 0,
+        totalRecipes: 0
+      };
+    }
+  }
+};
+
 // Get single recipe
 export const getRecipeById = async (id) => {
   const response = await api.get(`/recipes/${id}`);
@@ -50,7 +117,11 @@ export const createRecipe = async (formData) => {
 
 // Update recipe (Admin)
 export const updateRecipe = async (id, recipeData) => {
-  const response = await api.put(`/recipes/${id}`, recipeData);
+  const response = await api.put(`/recipes/${id}`, recipeData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 
