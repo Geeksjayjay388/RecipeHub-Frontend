@@ -27,6 +27,9 @@ const Navbar = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+
+// DEBUG - Add this
+console.log('👤 USER IN NAVBAR:', user);
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -155,10 +158,10 @@ const Navbar = () => {
                     className="flex items-center space-x-3 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                      <p className="text-sm font-semibold text-gray-800">{user?.name || 'User'}</p>
                       <p className="text-xs text-gray-500">{isAdmin ? 'Admin' : 'Member'}</p>
                     </div>
                     <FiChevronDown className={`text-gray-600 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -173,8 +176,8 @@ const Navbar = () => {
                       ></div>
                       <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fadeIn">
                         <div className="bg-gradient-to-br from-orange-500 to-red-600 p-4 text-white">
-                          <p className="font-semibold">{user.name}</p>
-                          <p className="text-sm opacity-90">{user.email}</p>
+                          <p className="font-semibold">{user?.name || 'User'}</p>
+                          <p className="text-sm opacity-90">{user?.email || ''}</p>
                         </div>
                         <div className="py-2">
                           {userMenuLinks.map((link) => {
@@ -262,10 +265,10 @@ const Navbar = () => {
               {user && (
                 <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {user.name.charAt(0).toUpperCase()}
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">{user.name}</p>
+                    <p className="font-semibold text-gray-800">{user?.name || 'User'}</p>
                     <p className="text-sm text-gray-600">{isAdmin ? 'Admin' : 'Member'}</p>
                   </div>
                 </div>

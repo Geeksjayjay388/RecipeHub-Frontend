@@ -1,116 +1,151 @@
 import api from './api';
 
-// Register user
-export const register = async (userData) => {
-  const response = await api.post('/auth/register', userData);
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+// Get current authenticated user
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get('/auth/me');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    throw error;
   }
-  return response.data;
+};
+
+// Get user profile with full details including createdAt
+export const getUserProfile = async () => {
+  try {
+    const response = await api.get('/users/profile');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+// Get user's starred recipes
+export const getStarredRecipes = async () => {
+  try {
+    const response = await api.get('/users/starred');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching starred recipes:', error);
+    throw error;
+  }
+};
+
+// Update user profile
+export const updateProfile = async (profileData) => {
+  try {
+    const response = await api.put('/users/profile', profileData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
 };
 
 // Login user
-export const login = async (userData) => {
-  const response = await api.post('/auth/login', userData);
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-  }
-  return response.data;
-};
-
-// Logout
-export const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-};
-
-// Get current user
-export const getCurrentUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
-};
-
-// Get all users (Admin)
-export const getAllUsers = async () => {
-  const response = await api.get('/users');
-  return response.data;
-};
-
-// Get users count (Admin)
-export const getUsersCount = async () => {
+export const login = async (credentials) => {
   try {
-    const response = await api.get('/users/count');
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     return response.data;
   } catch (error) {
-    // Fallback: get all users and count them
-    const users = await getAllUsers();
-    return { count: users.users?.length || users.length || 0 };
+    console.error('Error logging in:', error);
+    throw error;
   }
 };
 
-// ✅ Get active users count (Admin)
+// Register user
+export const register = async (userData) => {
+  try {
+    const response = await api.post('/auth/register', userData);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error registering:', error);
+    throw error;
+  }
+};
+
+// Logout user
+export const logout = () => {
+  localStorage.removeItem('token');
+};
+
+// Get user statistics
+export const getUserStats = async () => {
+  try {
+    const response = await api.get('/users/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    // Return default stats if endpoint doesn't exist
+    return {
+      totalRecipesCreated: 0,
+      totalReviews: 0,
+      weeklyActivity: 0,
+      recipesViewed: 0
+    };
+  }
+};
+
+// Get active users count (for admin dashboard)
 export const getActiveUsersCount = async () => {
   try {
     const response = await api.get('/users/active-count');
     return response.data;
   } catch (error) {
-    // Fallback: return mock data or calculate from all users
-    console.warn('Active users endpoint not available, using fallback');
-    try {
-      const users = await getAllUsers();
-      const allUsers = users.users || users;
-      
-      // Consider users active if they logged in within last 24 hours
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const activeUsers = allUsers.filter(user => {
-        const lastLogin = new Date(user.lastLogin || user.updatedAt || user.createdAt);
-        return lastLogin > oneDayAgo;
-      });
-      
-      return { count: activeUsers.length };
-    } catch (fallbackError) {
-      return { count: 0 };
-    }
+    console.error('Error fetching active users count:', error);
+    // Return default if endpoint doesn't exist
+    return { count: 0 };
   }
 };
 
-// Get starred recipes
-export const getStarredRecipes = async () => {
-  const response = await api.get('/users/starred-recipes');
-  return response.data;
-};
-
-// Update profile
-export const updateProfile = async (userData) => {
-  const response = await api.put('/users/profile', userData);
-  if (response.data) {
-    localStorage.setItem('user', JSON.stringify(response.data));
+// Get total users count (for admin dashboard)
+export const getUsersCount = async () => {
+  try {
+    const response = await api.get('/users/count');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users count:', error);
+    return { count: 0 };
   }
-  return response.data;
 };
 
-// Get user profile
-export const getUserProfile = async () => {
-  const response = await api.get('/users/profile');
-  return response.data;
+// Get all users (for admin dashboard)
+export const getAllUsers = async (params = {}) => {
+  try {
+    const response = await api.get('/users', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+  }
 };
 
-// Update user role (Admin)
-export const updateUserRole = async (userId, role) => {
-  const response = await api.put(`/users/${userId}/role`, { role });
-  return response.data;
-};
-
-// Delete user (Admin)
+// Delete user (admin only)
 export const deleteUser = async (userId) => {
-  const response = await api.delete(`/users/${userId}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
 };
 
-// Get user by ID (Admin)
-export const getUserById = async (userId) => {
-  const response = await api.get(`/users/${userId}`);
-  return response.data;
+// Update user role (admin only)
+export const updateUserRole = async (userId, role) => {
+  try {
+    const response = await api.put(`/users/${userId}/role`, { role });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
 };

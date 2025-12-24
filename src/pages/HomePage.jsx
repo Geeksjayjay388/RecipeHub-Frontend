@@ -26,11 +26,11 @@ const HomePage = () => {
   };
 
   return (
-    <main className="relative overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden -mx-[50vw] left-[50%] right-[50%] w-screen">
-        {/* Full Width Background Container */}
-        <div className="absolute inset-0 w-full z-0">
+    <main className="relative">
+      {/* Hero Section - FIXED: Removed overflow-x-hidden from main, added proper full-width wrapper */}
+      <section className="relative min-h-[90vh] flex items-center justify-center">
+        {/* Full Width Background Container - FIXED: Changed approach */}
+        <div className="absolute inset-0 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen z-0">
           <div 
             className="absolute inset-0 bg-cover bg-center bg-fixed"
             style={{
@@ -376,10 +376,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Stats Section - Full Width Edge to Edge */}
-      <section className="relative py-20 md:py-28 overflow-hidden -mx-[50vw] left-[50%] right-[50%] w-screen">
-        {/* Full Width Background */}
-        <div className="absolute inset-0 w-full bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+      {/* Stats Section - Full Width */}
+      <section className="relative py-20 md:py-28">
+        {/* FIXED: Better full-width implementation */}
+        <div className="absolute inset-0 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
           {/* Background Effects */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 -right-40 w-80 h-80 md:w-[40rem] md:h-[40rem] bg-orange-500/10 rounded-full blur-3xl"></div>
@@ -457,10 +457,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Final CTA Section - Full Width Edge to Edge */}
-      <section className="relative overflow-hidden -mx-[50vw] left-[50%] right-[50%] w-screen">
-        {/* Full Width Background */}
-        <div className="absolute inset-0 w-full">
+      {/* Final CTA Section - Full Width */}
+      <section className="relative">
+        {/* FIXED: Better full-width implementation */}
+        <div className="absolute inset-0 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
           <div 
             className="absolute inset-0 bg-cover bg-center bg-fixed"
             style={{
@@ -510,7 +510,8 @@ const HomePage = () => {
                     </Link>
                   </motion.div>
                 </div>
-                                <div className="grid grid-cols-3 gap-6 md:gap-8">
+                
+                <div className="grid grid-cols-3 gap-6 md:gap-8">
                   <div className="text-center">
                     <div className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Free</div>
                     <div className="text-base text-gray-300">No credit card needed</div>
