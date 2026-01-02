@@ -27,9 +27,6 @@ const Navbar = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-
-// DEBUG - Add this
-console.log('👤 USER IN NAVBAR:', user);
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -228,39 +225,43 @@ console.log('👤 USER IN NAVBAR:', user);
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+              className="lg:hidden p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors z-60"
             >
               {isMenuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
             </button>
           </div>
         </div>
-
-        {/* Mobile Search Bar - Only shown when menu is open */}
-        {isMenuOpen && (
-          <div className="lg:hidden pb-4 px-4">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search recipes..."
-                className="w-full px-4 py-2 pl-10 border-2 border-gray-200 rounded-full focus:outline-none focus:border-orange-500 transition-colors"
-              />
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            </form>
-          </div>
-        )}
       </nav>
 
       {/* Spacer to prevent content from hiding behind fixed navbar */}
       <div className="h-20 lg:h-20"></div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay - FIXED VERSION */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setIsMenuOpen(false)}>
-          {/* Mobile Menu Content */}
-          <div className="absolute top-20 left-0 right-0 bg-white border-t border-gray-100 shadow-lg animate-slideDown">
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsMenuOpen(false)}
+          ></div>
+          
+          {/* Mobile Menu Panel */}
+          <div className="fixed top-20 left-0 right-0 bg-white z-50 lg:hidden animate-slideDown max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="container mx-auto px-4 py-4">
+              {/* Mobile Search Bar */}
+              <div className="mb-4">
+                <form onSubmit={handleSearch} className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search recipes..."
+                    className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-full focus:outline-none focus:border-orange-500 transition-colors"
+                  />
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                </form>
+              </div>
+
               {/* User Info (Mobile) */}
               {user && (
                 <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl mb-4">
@@ -350,7 +351,7 @@ console.log('👤 USER IN NAVBAR:', user);
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );

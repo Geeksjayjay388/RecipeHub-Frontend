@@ -13,7 +13,6 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    console.log(`📤 ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -21,35 +20,22 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('❌ Request error:', error);
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor - REMOVE THE TOAST CALL
+// Response interceptor - NO REDIRECTS HERE
 api.interceptors.response.use(
   (response) => {
-    console.log(`📥 Response ${response.status}:`, response.config.url);
     return response;
   },
   (error) => {
-    console.error('❌ Response error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.message,
-      code: error.code
-    });
-    
-    // Remove toast error - it's not defined here
-    if (error.code === 'ERR_NETWORK') {
-      console.error('🌐 Network error - Backend might not be running on port 5500');
-      // We'll handle this in the component
-    }
-    
+    // Clear token on 401 but DON'T redirect
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      console.log('Token cleared due to 401 error');
     }
     
     return Promise.reject(error);

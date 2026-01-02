@@ -4,7 +4,7 @@ import { createRecipe, updateRecipe } from '../../services/recipeService';
 import toast from 'react-hot-toast';
 import { 
   FiUpload, FiX, FiPlus, FiMinus, FiSave, FiArrowLeft,
-  FiClock, FiUsers, FiBook, FiAlertCircle 
+  FiClock, FiUsers, FiBook, FiAlertCircle, FiCopy
 } from 'react-icons/fi';
 import { TbChefHat } from 'react-icons/tb';
 
@@ -12,6 +12,10 @@ const CreateRecipeForm = ({ recipe = null }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(recipe?.image || null);
+  const [bulkInput, setBulkInput] = useState({
+    ingredients: '',
+    instructions: ''
+  });
   
   const [formData, setFormData] = useState({
     title: recipe?.title || '',
@@ -56,11 +60,7 @@ const CreateRecipeForm = ({ recipe = null }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
-      
+      // Removed file size limit
       setFormData(prev => ({ ...prev, image: file }));
       
       const reader = new FileReader();
@@ -68,6 +68,8 @@ const CreateRecipeForm = ({ recipe = null }) => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+      
+      toast.success('Image uploaded successfully!');
     }
   };
 
@@ -103,6 +105,75 @@ const CreateRecipeForm = ({ recipe = null }) => {
         ? prev.tags.filter(t => t !== tag)
         : [...prev.tags, tag]
     }));
+  };
+
+  // New: Bulk paste handler for ingredients
+  const handleBulkPasteIngredients = () => {
+    if (!bulkInput.ingredients.trim()) {
+      toast.error('Please paste some ingredients first');
+      return;
+    }
+    
+    const ingredientsList = bulkInput.ingredients
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    if (ingredientsList.length === 0) {
+      toast.error('No valid ingredients found');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      ingredients: ingredientsList
+    }));
+    
+    setBulkInput(prev => ({ ...prev, ingredients: '' }));
+    toast.success(`Added ${ingredientsList.length} ingredients!`);
+  };
+
+  // New: Bulk paste handler for instructions
+  const handleBulkPasteInstructions = () => {
+    if (!bulkInput.instructions.trim()) {
+      toast.error('Please paste some instructions first');
+      return;
+    }
+    
+    const instructionsList = bulkInput.instructions
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    if (instructionsList.length === 0) {
+      toast.error('No valid instructions found');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      instructions: instructionsList
+    }));
+    
+    setBulkInput(prev => ({ ...prev, instructions: '' }));
+    toast.success(`Added ${instructionsList.length} instruction steps!`);
+  };
+
+  // New: Copy from clipboard
+  const pasteFromClipboard = async (field) => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setBulkInput(prev => ({ ...prev, [field]: text }));
+      toast.success('Pasted from clipboard!');
+    } catch (err) {
+      toast.error('Failed to access clipboard');
+    }
+  };
+
+  // New: Auto-split helper text
+  const bulkInputExamples = {
+    ingredients: `Example:\n2 cups flour\n1 tsp salt\n3 eggs\n1 cup milk\n2 tbsp butter`,
+    instructions: `Example:\nPreheat oven to 350°F\nMix dry ingredients\nAdd wet ingredients\nBake for 30 minutes\nLet cool before serving`
   };
 
   const validateForm = () => {
@@ -177,17 +248,6 @@ const CreateRecipeForm = ({ recipe = null }) => {
       // Add image if it's a file
       if (formData.image && typeof formData.image !== 'string') {
         recipeData.append('image', formData.image);
-        console.log('📸 Image file:', formData.image.name, formData.image.size, 'bytes');
-      }
-
-      // Debug log
-      console.log('📤 Sending FormData:');
-      for (let [key, value] of recipeData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: [File: ${value.name}, ${value.size} bytes]`);
-        } else {
-          console.log(`  ${key}:`, value);
-        }
       }
 
       if (recipe) {
@@ -202,12 +262,9 @@ const CreateRecipeForm = ({ recipe = null }) => {
       
     } catch (error) {
       console.error('❌ Error saving recipe:', error);
-      console.error('Response data:', error.response?.data);
-      
       const errorMsg = error.response?.data?.message 
         || error.response?.data?.error 
         || `Failed to ${recipe ? 'update' : 'create'} recipe`;
-      
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -368,12 +425,18 @@ const CreateRecipeForm = ({ recipe = null }) => {
             </div>
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload - No size limit */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <FiUpload className="mr-2 text-orange-500" />
               Recipe Image
             </h2>
+            
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-700 text-sm">
+                <span className="font-semibold">💡 Tip:</span> Upload high-quality images for better presentation. No size limits!
+              </p>
+            </div>
             
             {imagePreview ? (
               <div className="relative">
@@ -394,7 +457,7 @@ const CreateRecipeForm = ({ recipe = null }) => {
               <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                 <FiUpload className="text-4xl text-gray-400 mb-2" />
                 <span className="text-gray-600">Click to upload image</span>
-                <span className="text-sm text-gray-500 mt-1">Max size: 5MB</span>
+                <span className="text-sm text-gray-500 mt-1">No size limits • JPG, PNG, WebP</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -405,24 +468,77 @@ const CreateRecipeForm = ({ recipe = null }) => {
             )}
           </div>
 
-          {/* Ingredients */}
+          {/* Ingredients - Bulk Paste Option */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center mb-4 md:mb-0">
                 <FiBook className="mr-2 text-orange-500" />
                 Ingredients *
               </h2>
-              <button
-                type="button"
-                onClick={() => addArrayItem('ingredients')}
-                className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                <FiPlus className="mr-2" />
-                Add Ingredient
-              </button>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('bulk-ingredients').focus()}
+                  className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                >
+                  <FiPaste className="mr-2" />
+                  Quick Paste
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addArrayItem('ingredients')}
+                  className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                >
+                  <FiPlus className="mr-2" />
+                  Add One
+                </button>
+              </div>
             </div>
             
+            {/* Bulk Input Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-gray-700 font-semibold mb-2 flex items-center">
+                <FiPaste className="mr-2 text-green-500" />
+                Paste Ingredients (One per line)
+              </label>
+              <div className="flex space-x-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => pasteFromClipboard('ingredients')}
+                  className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                >
+                  <FiCopy className="mr-1" />
+                  Paste from Clipboard
+                </button>
+              </div>
+              <textarea
+                id="bulk-ingredients"
+                value={bulkInput.ingredients}
+                onChange={(e) => setBulkInput(prev => ({ ...prev, ingredients: e.target.value }))}
+                placeholder={bulkInputExamples.ingredients}
+                rows="4"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-xs text-gray-500">
+                  {bulkInput.ingredients.split('\n').filter(l => l.trim()).length} ingredients detected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleBulkPasteIngredients}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                >
+                  Add All Ingredients
+                </button>
+              </div>
+            </div>
+            
+            {/* Individual Ingredients List */}
             <div className="space-y-3">
+              <p className="text-sm text-gray-600 mb-2">
+                Currently have {formData.ingredients.filter(i => i.trim()).length} ingredients:
+              </p>
               {formData.ingredients.map((ingredient, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <span className="text-gray-500 font-semibold w-8">{index + 1}.</span>
@@ -447,24 +563,77 @@ const CreateRecipeForm = ({ recipe = null }) => {
             </div>
           </div>
 
-          {/* Instructions */}
+          {/* Instructions - Bulk Paste Option */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center mb-4 md:mb-0">
                 <FiBook className="mr-2 text-orange-500" />
                 Instructions *
               </h2>
-              <button
-                type="button"
-                onClick={() => addArrayItem('instructions')}
-                className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                <FiPlus className="mr-2" />
-                Add Step
-              </button>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('bulk-instructions').focus()}
+                  className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                >
+                  <FiPaste className="mr-2" />
+                  Quick Paste
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addArrayItem('instructions')}
+                  className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                >
+                  <FiPlus className="mr-2" />
+                  Add One
+                </button>
+              </div>
             </div>
             
+            {/* Bulk Input Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-gray-700 font-semibold mb-2 flex items-center">
+                <FiPaste className="mr-2 text-green-500" />
+                Paste Instructions (One step per line)
+              </label>
+              <div className="flex space-x-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => pasteFromClipboard('instructions')}
+                  className="flex items-center px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                >
+                  <FiCopy className="mr-1" />
+                  Paste from Clipboard
+                </button>
+              </div>
+              <textarea
+                id="bulk-instructions"
+                value={bulkInput.instructions}
+                onChange={(e) => setBulkInput(prev => ({ ...prev, instructions: e.target.value }))}
+                placeholder={bulkInputExamples.instructions}
+                rows="4"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-xs text-gray-500">
+                  {bulkInput.instructions.split('\n').filter(l => l.trim()).length} steps detected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleBulkPasteInstructions}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                >
+                  Add All Steps
+                </button>
+              </div>
+            </div>
+            
+            {/* Individual Instructions List */}
             <div className="space-y-3">
+              <p className="text-sm text-gray-600 mb-2">
+                Currently have {formData.instructions.filter(i => i.trim()).length} steps:
+              </p>
               {formData.instructions.map((instruction, index) => (
                 <div key={index} className="flex items-start space-x-2">
                   <span className="text-gray-500 font-semibold w-8 mt-2">{index + 1}.</span>
@@ -514,10 +683,15 @@ const CreateRecipeForm = ({ recipe = null }) => {
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex items-center justify-between bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white rounded-2xl shadow-lg p-6 space-y-4 md:space-y-0">
             <div className="flex items-start text-sm text-gray-600">
               <FiAlertCircle className="mr-2 mt-0.5 flex-shrink-0" />
-              <span>Fields marked with * are required</span>
+              <div>
+                <span>Fields marked with * are required</span>
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Use the "Quick Paste" feature to save time on ingredients and instructions!
+                </p>
+              </div>
             </div>
             
             <div className="flex space-x-4">
