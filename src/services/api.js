@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5500/api';
+const API_URL = 'https://recipehub-backend-y2ax.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
